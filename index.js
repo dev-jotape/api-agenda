@@ -15,10 +15,14 @@ firebase.initializeApp(config);
 var bd = firebase.database().ref('clientes/')
 
 // respond with "hello world" when a GET request is made to the homepage
-app.get('/', function(req, res) {
-    let clientes;
+app.get('/', function (req, res) {
+    res.send('Hello World');
+});
 
-    bd.on('child_added', (data) => {
+app.get('/clientes', async function(req, res) {
+    let clientes = [];
+
+    await bd.on('child_added', (data) => {
         clientes.push({
           "key": data.key,
           "nome": data.val().nome,
@@ -27,14 +31,17 @@ app.get('/', function(req, res) {
           "cor": data.val().cor
         });
     });
+
+    if(clientes.length === 0 ) {
+        setTimeout (() => {
+            res.json(clientes)
+        }, 2000)
+    } else {
+        res.json(clientes)
+    }
     
-    res.json(clientes)
 });
 
-// GET method route
-app.get('/clientes', function (req, res) {
-    res.send('GET request to the homepage');
-});
 
 app.get('/clientes/:id', function (req, res) {
     const id = req.params.id
@@ -54,4 +61,10 @@ app.put('/clientes/:id', function (req, res) {
     const id = req.params.id
 
     res.send('POST request to the homepage');
+});
+
+app.set('port', (process.env.PORT || 5000))
+
+app.listen(app.get('port'), function () {
+	console.log('running on port', app.get('port'))
 });
