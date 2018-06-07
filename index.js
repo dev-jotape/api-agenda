@@ -1,5 +1,6 @@
 var express = require('express');
 var app = express();
+var bodyParser = require('body-parser')
 
 //Configuração e inicialização do firebase
 var firebase = require('firebase');
@@ -12,14 +13,17 @@ var config = {
   messagingSenderId: "159682396830"
 };
 firebase.initializeApp(config);
-var bd = firebase.database().ref('clientes/')
+var bd = firebase.database().ref('clientes/');
+
+app.use(bodyParser.urlencoded({ extended: true}));
+app.use(bodyParser.json());
 
 // respond with "hello world" when a GET request is made to the homepage
 app.get('/', function (req, res) {
     res.send('Hello World');
 });
 
-app.get('/clientes', async function(req, res) {
+app.get('/clientes', async (req, res) => {
     let clientes = [];
 
     await bd.on('child_added', (data) => {
@@ -43,24 +47,63 @@ app.get('/clientes', async function(req, res) {
 });
 
 
-app.get('/clientes/:id', function (req, res) {
+app.get('/clientes/:id', (req, res) => {
     const id = req.params.id
 
+    // let cliente;
+
+    firebase.database().ref('/clientes/' + id).once('value').then((snapshot) => {
+        res.json(snapshot.val());
+    });
     
-    res.send('GET request to the homepage');
 });
   
   // POST method route
-app.post('/clientes', function (req, res) {
-    var data = req.body;
+app.post('/clientes', async (req, res) => {
+    var req = req.body;
 
-    res.send('POST request to the homepage');
+    // pega a referencia da tabela
+    let proxId = 0
+
+    // percorre a tabela para ver qual o ultimo ID utilizado
+    // o AWAIT irá parar a execução do programa aqui até que esta função termine de ser executada
+    await bd.on('child_added', (data) => {
+      let ultimoId = parseInt(data.key);
+      proxId = ultimoId > proxId ? ultimoId : proxId
+    });
+    proxId++
+
+    // grava um novo cliente com o proximo ID disponivel
+    await firebase.database().ref('clientes/' + proxId).set({
+        nome: req.nome,
+        email: req.email,
+        telefone: req.telefone,
+        cor: req.cor
+    });
+
+    res.send(201, { id: proxId});
 });
 
-app.put('/clientes/:id', function (req, res) {
-    const id = req.params.id
+app.put('/clientes/:id', (req, res) => {
+    const id = req.params.id;
+    var data = req.body;
 
-    res.send('POST request to the homepage');
+    firebase.database().ref('clientes/' + id ).update({
+        nome: data.nome,
+        email: data.email,
+        telefone: data.telefone,
+        cor: data.cor
+    });
+
+    res.send(200)
+});
+
+app.delete('/clientes/:id', async (req, res) => {
+    const id = req.params.id;
+
+    await firebase.database().ref('clientes/' + id).remove()
+
+    res.send(200)
 });
 
 app.set('port', (process.env.PORT || 5000))
