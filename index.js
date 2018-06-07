@@ -1,6 +1,7 @@
 var express = require('express');
 var app = express();
-var bodyParser = require('body-parser')
+var bodyParser = require('body-parser');
+var cors = require('cors');
 
 //Configuração e inicialização do firebase
 var firebase = require('firebase');
@@ -17,6 +18,7 @@ var bd = firebase.database().ref('clientes/');
 
 app.use(bodyParser.urlencoded({ extended: true}));
 app.use(bodyParser.json());
+app.use(cors())
 
 // respond with "hello world" when a GET request is made to the homepage
 app.get('/', function (req, res) {
